@@ -43,7 +43,7 @@ import com.github.lgooddatepicker.components.DatePickerSettings;
 
 public class App {
 
-    private static final String[] COLUMN_NAMES = {"Asset Tag", "Model", "Manufacturer", "Category", "Quantity", "Serial", "Physical Location", "Date Received", "Date Recorded", "Where", "Note", "Image"};
+    private static final String[] COLUMN_NAMES = {"Asset Tag", "Model", "Manufacturer", "Category", "Quantity", "Serial", "Physical Location", "Where", "Date Received", "Date Recorded", "Note", "Image"};
     private static final File SER_FILE = new File("inventory.ser");
     private static String imagePath = ""; // Class-level field for image path
     private static boolean exporting = false;
@@ -51,6 +51,7 @@ public class App {
 
     public static void main(String[] args) {
         loadLastImportDirectory();
+        loadLastExportDirectory();
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Inventory System");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -180,6 +181,7 @@ public class App {
                 JButton submitButton = new JButton("Add Asset");
                 dialog.add(submitButton);
 
+                // Update the `Add Asset Button` action listener
                 submitButton.addActionListener(event -> {
                     Object[] row = new Object[COLUMN_NAMES.length];
                     row[0] = assetTagField.getText(); // Asset Tag
@@ -189,16 +191,14 @@ public class App {
                     row[4] = quantityField.getText(); // Quantity
                     row[5] = serialField.getText(); // Serial
                     row[6] = physicalLocationField.getText(); // Physical Location
-                    row[7] = dateReceivedPicker.getDate(); // Date Received
-                    row[8] = new java.util.Date(); // Date Recorded (current date)
-                    row[9] = whereField.getText(); // Where
+                    row[7] = whereField.getText(); // Where
+                    row[8] = dateReceivedPicker.getDate(); // Date Received
+                    row[9] = new java.util.Date(); // Date Recorded (current date)
                     row[10] = notesArea.getText(); // Notes
                     row[11] = imagePath.isEmpty() ? "No Image" : new File(imagePath).getAbsolutePath(); // Use absolute path
                     model.addRow(row);
                     dialog.dispose();
                     saveTableData(model); // Save after adding
-
-                    // Reset imagePath to default value after adding the asset
                     imagePath = ""; // Clear imagePath
                 });
 
@@ -360,12 +360,20 @@ public class App {
         }
     }
 
+    private static File lastExportDirectory = new File(System.getProperty("user.home")); // Default to user's home directory
+
     private static void exportToExcel(JTable table) {
-        JFileChooser fileChooser = new JFileChooser();
+        JFileChooser fileChooser = new JFileChooser(lastExportDirectory); // Start in last export directory
         fileChooser.setFileFilter(new FileNameExtensionFilter("Excel files", "xlsx"));
+        
+        // Set the default file name to "Inventory.xlsx"
+        fileChooser.setSelectedFile(new File("Inventory.xlsx"));
+        
         int returnValue = fileChooser.showSaveDialog(table);
         if (returnValue == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
+            lastExportDirectory = fileChooser.getCurrentDirectory(); // Update last export directory
+            
             String filePath = selectedFile.getAbsolutePath();
             if (!filePath.endsWith(".xlsx")) {
                 selectedFile = new File(filePath + ".xlsx");
@@ -395,6 +403,7 @@ public class App {
                 try (FileOutputStream fos = new FileOutputStream(selectedFile)) {
                     workbook.write(fos);
                     JOptionPane.showMessageDialog(table, "Data exported successfully.");
+                    saveLastExportDirectory(); // Save the last export directory
                 } catch (IOException e) {
                     e.printStackTrace();
                     JOptionPane.showMessageDialog(table, "Failed to export data.");
@@ -403,6 +412,22 @@ public class App {
                 e.printStackTrace();
                 JOptionPane.showMessageDialog(table, "Failed to export data.");
             }
+        }
+    }
+
+    private static void saveLastExportDirectory() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("lastExportDirectory.ser"))) {
+            oos.writeObject(lastExportDirectory);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void loadLastExportDirectory() {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("lastExportDirectory.ser"))) {
+            lastExportDirectory = (File) ois.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            lastExportDirectory = new File(System.getProperty("user.home")); // Default to user's home directory
         }
     }
 
