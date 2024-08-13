@@ -1,3 +1,12 @@
+## Inventory System
+
+Simple Inventory System written in Java for IT.
+
+Features:
+- Record Asset
+- Easy Import/Export Asset List
+- Search Asset
+
 ## Getting Started
 
 Welcome to the VS Code Java world. Here is a guideline to help you get started to write Java code in Visual Studio Code.
