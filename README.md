@@ -6,6 +6,7 @@ Features:
 - Record Asset
 - Easy Import/Export Asset List
 - Search Asset
+- Track Asset
 
 ## Getting Started
 
